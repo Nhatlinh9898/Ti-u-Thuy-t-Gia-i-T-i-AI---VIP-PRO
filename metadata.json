@@ -3,5 +3,8 @@
   "description": "Bộ khung ứng dụng viết tiểu thuyết bằng AI đỉnh cao, hỗ trợ cấu trúc phân cấp, viết tiếp, tóm tắt và Voice Studio Pro.",
   "requestFramePermissions": [
     "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
 }
