@@ -84,7 +84,11 @@ import {
   NeuralInferenceRecord,
   NeuralSelfLearningState,
   NeuralInferenceRunParams,
-  NeuralSelfLearnFeedbackParams
+  NeuralSelfLearnFeedbackParams,
+  StoryNode,
+  StoryConnection,
+  StoryWorkflowVariant,
+  StoryWorkflowExecutionResult
 } from '../types';
 
 const handleResponse = async (res: Response) => {
@@ -2730,6 +2734,264 @@ export const generateCharacterTrajectoryRouting = async (params: {
     ]
   };
 };
+
+// =========================================================================
+// NODE-BASED VISUAL STORY WORKFLOW EXECUTION
+// =========================================================================
+
+export const executeStoryWorkflow = async (params: {
+  nodes: StoryNode[];
+  connections: StoryConnection[];
+  genre?: string;
+  tone?: string;
+  customPrompt?: string;
+  seed?: number;
+}): Promise<StoryWorkflowExecutionResult> => {
+  try {
+    const res = await fetch('/api/gemini/execute-story-workflow', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    });
+    const data = await handleResponse(res);
+    if (data.data) return data.data;
+    return fallbackExecuteStoryWorkflow(params);
+  } catch (err: any) {
+    console.warn('Backend workflow execution failed, running client synthesis:', err);
+    return fallbackExecuteStoryWorkflow(params);
+  }
+};
+
+export const fallbackExecuteStoryWorkflow = (params: {
+  nodes: StoryNode[];
+  connections: StoryConnection[];
+  genre?: string;
+  tone?: string;
+  customPrompt?: string;
+  seed?: number;
+}): StoryWorkflowExecutionResult => {
+  const { nodes, connections } = params;
+  const currentSeed = params.seed || Math.floor(Math.random() * 899999 + 100000);
+
+  // Extract connected nodes (filter out muted nodes)
+  const activeNodes = nodes.filter(n => !n.muted);
+  const charNodes = activeNodes.filter(n => n.type === 'character_input' as any || n.type === 'character_loader');
+  const locNodes = activeNodes.filter(n => n.type === 'location_input' as any || n.type === 'location_setting');
+  const calamityNodes = activeNodes.filter(n => n.type === 'calamity_ruins');
+  const seedNodes = activeNodes.filter(n => n.type === 'longevity_seed');
+  const battleNodes = activeNodes.filter(n => n.type === 'battle_breakthrough');
+  const pillNodes = activeNodes.filter(n => n.type === 'alchemy_catalyst');
+  const daoNodes = activeNodes.filter(n => n.type === 'dao_revelation');
+  const cameraNodes = activeNodes.filter(n => n.type === 'cinematic_director');
+  const talismanNodes = activeNodes.filter(n => n.type === 'talisman_formation');
+  const beastNodes = activeNodes.filter(n => n.type === 'spirit_beast_summon');
+  const promptNodes = activeNodes.filter(n => n.type === 'story_prompt');
+  const masterNodes = activeNodes.filter(n => n.type === 'master_synthesis');
+  const upscalerNodes = activeNodes.filter(n => n.type === 'spatial_prose_upscaler');
+
+  const mainChar = charNodes[0]?.data?.characterName || 'Lăng Tiêu';
+  const mainRealm = charNodes[0]?.data?.realm || 'Kim Đan Hậu Kỳ';
+  const mainWeapon = charNodes[0]?.data?.weapon || 'Thái Sơ Trảm Tiên Kiếm';
+
+  const location = locNodes[0]?.data?.locationName || 'Đoạn Hồn Cổ Nhai';
+  const region = locNodes[0]?.data?.region || 'Biên Giới Tây Hoang';
+  const weather = locNodes[0]?.data?.weather || 'Mây xám nặng trĩu sà sát đỉnh núi, gió bấc gào rít lạnh buốt';
+
+  const hasCalamity = calamityNodes.length > 0;
+  const calamityDesc = calamityNodes[0]?.data?.calamityType || 'Chiến trường hoang tàn sau cuộc huyết chiến vạn người';
+  const ruinScale = calamityNodes[0]?.data?.ruinScale || 'Binh khí gãy vụn cắm ngập trên đất cháy, xác chiến xa bốc khói';
+  const mortalTragedy = calamityNodes[0]?.data?.mortalTragedy || 'Tiếng kêu thê lương của sinh linh chìm nghỉm trong gió hú';
+
+  const hasSeed = seedNodes.length > 0;
+  const seedName = seedNodes[0]?.data?.seedName || 'Thái Cổ Trường Sinh Thần Chủng';
+  const seedGlow = seedNodes[0]?.data?.descentGlow || 'Hạt mầm xanh biếc lấp lánh như viên phỉ thúy rơi từ chín tầng mây';
+  const seedMiracle = seedNodes[0]?.data?.sproutingAura || 'Rễ thần ôm trọn đao kiếm gãy vụn, đâm chồi nở hoa linh chi ngào ngạt';
+
+  const hasBattle = battleNodes.length > 0;
+  const opponent = battleNodes[0]?.data?.opponent || 'U Hồn Ma Tông Thất Đại Ma Tướng';
+  const conflict = battleNodes[0]?.data?.conflictCause || 'Tranh đoạt hạt giống trường sinh giữa tâm bão sát phạt';
+  const secretMove = battleNodes[0]?.data?.secretMove || 'Thái Sơ Kiếm Quyết: Nhất Niệm Hoa Nở, Quân Lâm Thiên Hạ';
+
+  const hasPill = pillNodes.length > 0;
+  const pillName = pillNodes[0]?.data?.pillName || 'Cửu Khiếu Bất Tử Niết Bàn Đan';
+  const pillRank = pillNodes[0]?.data?.rank || 'Thánh Phẩm Thần Đan';
+  const pillSensation = pillNodes[0]?.data?.internalSensation || 'Dược lực bùng nổ như dung nham thiêu đốt 108 khiếu huyệt';
+  const pillBurst = pillNodes[0]?.data?.burstEffect || 'Pháp lực cuộn trào tăng vọt gấp mười lần, kinh mạch mở rộng vô biên';
+
+  const hasDao = daoNodes.length > 0;
+  const daoAxiom = daoNodes[0]?.data?.daoAxiom || 'Sinh tử luân hồi, cực hạn tử vong chính là khởi nguyên sinh mệnh';
+  const daoTrigger = daoNodes[0]?.data?.enlightenmentTrigger || 'Chứng kiến thảo mộc đâm chồi từ trong đống tro tàn hài cốt';
+  const daoDomain = daoNodes[0]?.data?.domainExpansion || 'Vạn Cổ Sinh Mệnh Đạo Vực mười dặm, hoa sen nở rộ trong hư không';
+
+  const hasCamera = cameraNodes.length > 0;
+  const cameraFraming = cameraNodes[0]?.data?.framingStyle || 'Toàn cảnh vũ trụ thu hẹp vào ánh mắt nhân vật';
+  const cameraMovement = cameraNodes[0]?.data?.lensMovement || 'Góc máy lướt chậm trên mặt đất nứt nẻ rồi bay vút lên trời cao';
+  const cameraPalette = cameraNodes[0]?.data?.colorPalette || 'Tông màu tro xám tang thương tương phản với ánh bích lục sinh mệnh';
+  const cameraSoundscape = cameraNodes[0]?.data?.soundscape || 'Tiếng gió hú rít lạnh lẽo xen lẫn tiếng nhịp tim trầm hùng';
+
+  const hasTalisman = talismanNodes.length > 0;
+  const formationName = talismanNodes[0]?.data?.formationName || 'Cửu U Tru Tiên Đại Trận';
+  const formationGrade = talismanNodes[0]?.data?.formationGrade || 'Thái Cổ Tuyệt Sát Trận';
+  const formationEffect = talismanNodes[0]?.data?.effectMechanic || 'Phong tỏa vạn trượng hư không, ngưng kết Tru Tiên Kiếm Khí';
+  const formationChant = talismanNodes[0]?.data?.activationChant || 'Càn Khôn Mượn Pháp, Trấn Hồn Tỏa Phách!';
+
+  const hasBeast = beastNodes.length > 0;
+  const beastName = beastNodes[0]?.data?.beastName || 'Thái Cổ Ngũ Trảo Kim Long';
+  const beastSpecies = beastNodes[0]?.data?.species || 'Hồng Hoang Chân Long Thần Thú';
+  const beastAura = beastNodes[0]?.data?.combatAura || 'Long ngâm xé toạc chín tầng mây, vảy rồng kim sắc đỡ trọn thiên kiếp';
+
+  const promptIdea = promptNodes[0]?.data?.promptText || params.customPrompt || 'Đạo tâm chấn động trước sinh tử vô thường, quyết định gieo mầm sống cứu vớt trần gian.';
+  const upscalerStyle = upscalerNodes[0]?.data?.styleRegister || 'Cổ phong bi tráng kết hợp hào khí thần tiên';
+
+  // Synthesize Raw Prose
+  let rawProse = `Gió hoàng hôn quét qua ${location} mang theo hơi lạnh buốt giá và sát khí đặc quánh làm nghẹt thở. Mười dặm hẻm núi thuộc ${region} giờ đây tựa hồ một nấm mồ tập thể khổng lồ. ${weather}. ${hasCamera ? `Khung cảnh mở ra theo phong cách ${cameraFraming}: ${cameraMovement}, nơi ${cameraPalette} hòa quyện cùng ${cameraSoundscape}.` : ''}
+
+${mainChar} dừng chân trên mỏm đá tai mèo chênh vênh, vạt áo bào thêu chỉ vàng phần phật bay trong gió lạnh. Tay phải chàng khẽ siết chặt chuôi ${mainWeapon}, ánh mắt thâm trầm như giếng cổ nhìn xuống cảnh tượng tang thương bên dưới. ${hasCalamity ? `${calamityDesc}. ${ruinScale}. ${mortalTragedy}.` : ''}
+
+${hasBattle ? `Đúng lúc ấy, không gian chợt rách toạc. Tiếng gầm thét âm u của ${opponent} vang vọng giữa tầng không: "${mainChar}, hôm nay chốn này chính là ngày giỗ của ngươi!". ${conflict}. Không chút nao núng, chàng vận chuyển công pháp ${mainRealm}, xuất chiêu ${secretMove}, kiếm khí xé toạc màn đêm tịch mịch!` : ''}
+
+${hasPill ? `Thời khắc then chốt, ${mainChar} mở nắp bình ngọc, nuốt trọn ${pillName} (${pillRank}). ${pillSensation}! ${pillBurst}, đánh tan mọi thương tổn và đưa chiến lực lên đỉnh cao tuyệt đối.` : ''}
+
+${hasDao ? `Trong khoảnh khắc đối mặt ranh giới sinh tử, ${daoTrigger}, tâm hải chàng bỗng bừng sáng đại ngộ: "${daoAxiom}". ${daoDomain}, uy áp đạo vận bao trùm cả bầu trời!` : ''}
+
+${hasSeed ? `Giữa đống đổ nát ngút trời, ${mainChar} chậm rãi đưa tay lên hư không. Từ trong lòng bàn tay chàng, một hạt ngọc tròn trịa tỏa ánh sáng bích lục ấm áp — ${seedName} — khẽ bay vút lên. ${seedGlow}. Vừa chạm đất tro tàn, một tiếng sấm sinh mệnh trầm hùng vang lên từ lòng đất mẹ. ${seedMiracle}. Rễ cây đan cài hàn gắn lại vách đá nứt toác, vạn thanh đao kiếm gỉ sét bỗng trổ hoa linh chi ngào ngạt, mưa cam lộ nhỏ xuống làm lành mọi thương tích, biến nấm mồ hoang phế thành tiên cảnh bồng lai rực rỡ sinh cơ.` : ''}
+
+${promptIdea}
+
+Đứng dưới tán cây thần ngàn trượng chọc thủng vòm trời, ngắm nhìn ánh bình minh đầu tiên le lói chiếu rọi vạn vật vừa tái sinh, đạo tâm của ${mainChar} chưa bao giờ kiên định đến thế. Tu tiên nghịch thiên, chẳng phải vì trường sinh bất tử của riêng mình, mà là để bảo hộ chút sinh cơ mong manh cho thiên hạ thái bình!`;
+
+  // Synthesize Upscaled Prose (Variant 1: Bi Tráng Sử Thi)
+  let upscaledProse = `【Đại Đạo Phong Vân • Khởi Sinh Từ Đống Tro Tàn】
+
+Gió bấc rít gào qua ${location}, thổi tung vạt áo bào của ${mainChar} giữa bóng tà dương đỏ quạch như máu đọng. Nơi biên thùy ${region}, đất trời chìm trong một màu ảm đạm hoang hoải đến nao lòng. ${hasCamera ? `${cameraMovement}, bao quát trọn vẹn ${cameraPalette}. Trong không gian văng vẳng ${cameraSoundscape}.` : ''} Bụi tro than bay rợp trời, phủ lên vạn mũi tên đồng gãy vụn và những cỗ chiến xa đã vỡ nát từ trận huyết chiến sinh tử.
+
+Chàng khẽ nhắm mắt, cảm nhận từng luồng kiếm khí tàn dư đang gào thét u u trong từng kẽ đá. Tu vi ${mainRealm} ngưng tụ thành một vòng hào quang óng ánh hộ thể, ngăn cách chàng với tử khí nồng nặc đang bốc lên từ lòng vực thẳm.
+
+${hasBattle ? `Bỗng nhiên, sát khí ngút trời ập đến! ${opponent} từ trong hư không đạp mây đen giáng thế, thanh âm cuồng loạn chấn động sơn hà: "${mainChar}, giao ra chí bảo, lưu ngươi toàn thây!". Đối diện nghịch cảnh ngàn cân treo sợi tóc, chàng cười dài sảng khoái, rút kiếm xuất chiêu ${secretMove}. Kiếm mang rực rỡ tựa dải ngân hà xé toạc vòm mây đen kịt, đẩy lùi ma sát vạn trượng!` : ''}
+
+${hasPill ? `Giữa lằn ranh sinh tử, ${mainChar} điểm ngón tay, một viên đan dược phát quang bảy màu — ${pillName} — rơi thẳng vào miệng. Trong chớp mắt, ${pillSensation}. ${pillBurst}, toàn thân chàng bộc phát thần quang kim sắc như chiến thần giáng trần!` : ''}
+
+${hasDao ? `Chứng kiến đao binh đổ nát bỗng nảy mầm chồi biếc, ${daoTrigger}, chàng thốt lên chân lý vĩnh hằng: "${daoAxiom}". ${daoDomain}, trấn áp hoàn toàn ma khí hung bạo!` : ''}
+
+${hasSeed ? `Thế nhưng, sau cuộc chém giết vang trời lở đất, nhìn lại nhân gian điêu tàn xơ xác, đạo tâm chàng chợt rung lên những hồi chuông tỉnh thức. Chàng chậm rãi mở lòng bàn tay, nâng niu ${seedName}. Hạt mầm lấp lánh như giọt lệ của trời xanh khẽ rơi xuống, chạm vào lớp đất cháy sém. 
+
+"Oanh!" — Một tiếng sấm đại đạo rền vang cửu u. Sóng gợn sinh mệnh màu ngọc bích từ điểm rơi bùng nổ, quét sạch mọi hận thù và oán khí đẫm máu. Từ lòng xỉ than, một chồi non xanh biếc vươn mình, chỉ sau vài nhịp thở đã hóa thành Cổ Mộc ngàn trượng xòe tán lọng tiên che rợp mười dặm non sông. Vạn thanh đao kiếm rỉ máu bỗng đâm chồi những dây leo phỉ thúy, bung nở những đóa linh chi thơm ngát. Từng giọt sương mai cam lộ rơi xuống tí tách, làm lành da thịt của những kẻ sống sót, hồi sinh mảnh đất chết chóc thành một chốn bồng lai bất lão vĩnh hằng.` : ''}
+
+${promptIdea}
+
+Gió xuân ấm áp mơn man lọn tóc mai, thay thế cho cơn buốt giá thấu xương thủa nào. Đứng trước kỳ quan do chính tay mình khai sinh, ${mainChar} ngửa mặt cười vang giữa đất trời bao la:
+"Thiên đạo bất nhân coi vạn vật như chó rơm, vậy thì người tu đạo ta xin vì chúng sinh mà gieo xuống một mầm bất tử!"`;
+
+  // Variant 2: Nhân Sinh Chữa Lành & Mầm Sống (Deep emotional and poignant healing focus)
+  const variant2Prose = `【Mưa Cam Lộ Rửa Vết Thương Trần Thế • Mầm Sống Khởi Nguyên】
+
+Mùi khói xám của đống tàn tích tại ${location} quyện chặt vào sương chiều, buốt giá đến tận tâm can. Khắp nẻo đường vào thôn xóm, tường sụp đá tan, những luống khoai khô nứt toác vì nắng hạn, những mảnh ngói vỡ của miếu thành hoàng chỏng chơ trong gió bấc.
+
+${mainChar} cúi người, nhặt lên một chiếc chuông gió bằng đồng đã méo mó của một hài đồng vô tội. Trong lòng chàng dâng lên một nỗi xót xa vô hạn: "Trời cao nuôi dưỡng vạn vật, cớ sao lại để hồng trần chịu cảnh lầm than nhường này?".
+
+${hasBattle ? `Khi bóng tối toan nuốt chửng những tia hy vọng cuối cùng, ${opponent} hiện thân toan cướp sạch sinh khí. Bằng ý chí kiên định ngút trời, chàng thi triển ${secretMove}, kiếm quang bừng sáng đẩy lui ác khí, chở che cho chút hơi tàn của mảnh đất nghèo.` : ''}
+
+${hasPill ? `Nhìn những sinh linh thoi thóp, ${mainChar} không ngần ngại tán nhỏ ${pillName}, hòa vào chén sương sớm rưới lên kinh mạch đang vụn vỡ của đồng bào. Dược lực ${pillBurst} mang lại kỳ tích phục sinh chấn động cõi lòng.` : ''}
+
+${hasDao ? `Lòng tràn đầy từ bi, ${mainChar} tỏ ngộ sâu sắc: "${daoAxiom}". ${daoDomain}, xoa dịu mọi oán niệm ngút trời.` : ''}
+
+${hasSeed ? `Giữa chốn thê lương ấy, ${mainChar} hướng tâm về thiên địa, thả rơi ${seedName}. Không có tiếng nổ đinh tai nhức óc, chỉ có tiếng suối róc rách dịu dàng len lỏi vào lòng đất sâu. 
+
+Một luồng linh khí dịu mát tựa bàn tay người mẹ nhẹ nhàng vỗ về khắp núi rừng. Mầm cây hé nở, rễ trường sinh vươn dài đan thành những chiếc cầu nối liền khe nứt vực sâu. Từ trên tán cây ngọc, mưa cam lộ nhỏ xuống lách tách, thấm vào môi khô của những người hấp hối, nuôi dưỡng những mầm lúa xanh mơn mởn đội đất trồi lên. Nước ngọt mát rượi tràn đầy lại lòng giếng cạn, chim én từ phương xa rủ nhau bay về ríu rít quanh mái hiên tranh vừa được dựng lại.` : ''}
+
+${promptIdea}
+
+Nhìn những nụ cười rạng rỡ của người dân bên bờ suối mới khơi dòng, ${mainChar} cất bước ra đi trong lặng lẽ. Đại đạo vô hình, nhưng ân tình của mầm sống trường sinh sẽ mãi mãi khắc sâu trong ký ức của nhân gian.`;
+
+  // Variant 3: Thần Thoại Thượng Cổ & Giác Ngộ Đại Đạo (Mythic cosmic rebirth & Dao realization)
+  const variant3Prose = `【Hỗn Độn Sơ Khai • Thái Cổ Thần Mộc Trùng Sinh】
+
+Tại cấm địa ${location}, không gian vặn xoắn như dải lụa rách nát sau đòn hủy diệt của cấm kỵ pháp bảo. Quy tắc thiên địa sụp đổ, linh khí cạn kiệt, chỉ còn lại hư vô hoang vu và những mảnh vỡ ngôi sao rơi rụng. ${hasCamera ? `Góc nhìn bao la ${cameraFraming}, lướt qua dải tinh hà tĩnh lặng.` : ''}
+
+${mainChar} khoanh chân ngồi giữa hư không, đỉnh đầu hiện ra ba đóa hoa sen đại đạo của cảnh giới ${mainRealm}. Trong tay chàng, ${seedName} không đơn thuần là một hạt mầm, mà là kết tinh của một kỷ nguyên thái cổ đã qua.
+
+${hasBattle ? `Trận quyết chiến với ${opponent} đã chứng minh chân lý: dùng bạo lực chế ngự bạo lực chỉ sinh thêm oán hận. ${secretMove} chàng xuất ra không phải để sát sinh, mà là để phong ấn cuồng nộ, mở ra cánh cửa tạo hóa!` : ''}
+
+${hasPill ? `Nội tức cuộn trào, chàng nuốt ${pillName}, ${pillSensation}, để thần hồn hòa nhập cùng quy luật vũ trụ.` : ''}
+
+${hasDao ? `Thiên địa cộng minh vang vọng: "${daoAxiom}". ${daoDomain}, chiếu sáng cửu thiên thập địa!` : ''}
+
+${hasSeed ? `Khi ${seedName} chạm vào tọa độ linh mạch đứt đoạn, hư không bỗng ngưng đọng lại trong tích tắc. 
+
+"Đạo sinh nhất, nhất sinh nhị, nhị sinh tam, tam sinh vạn vật!"
+
+Hạt giống nứt vỏ, một luồng sinh khí màu tím biếc cuộn trào tựa hồ Hỗn Độn Khí thuở khai thiên lập địa. Cổ Mộc Bất Diệt vươn cao vượt khỏi tầng mây thứ chín, rễ cắm sâu vào Cửu U Minh Giới, cành lá nâng đỡ cả ngân hà tinh tú! Những vết rách không gian được khâu lại bằng những sợi tơ sinh mệnh óng ánh. Nơi từng là cấm địa tử vong, nay chuyển hóa thành Động Thiên Thần Tiên đệ nhất của ${region}, tiên hạc bay lượn, kỳ lân phủ phục dưới bóng đại thụ ngàn năm.` : ''}
+
+${promptIdea}
+
+Trong khoảnh khắc ấy, ${mainChar} mở mắt, ánh nhìn xuyên thấu vạn cổ. Chàng đã không còn bị trói buộc bởi cảnh giới trần tục, mà chính thức chạm tay vào cánh cửa Trường Sinh Bất Lão của chư thần!`;
+
+  const variants: StoryWorkflowVariant[] = [
+    {
+      variantId: 'variant_epic',
+      label: 'Bản 1: Bi Tráng Sử Thi',
+      toneStyle: 'Hùng tráng bi tráng, hoành tráng chiến trận & thần tích',
+      chapterTitle: `Chương: ${mainChar} Gieo Mầm Bất Tử Tại ${location}`,
+      prose: upscaledProse,
+      summary: `Phân cảnh sử thi: ${mainChar} vượt qua chiến tàn ${location}, đối đầu ${hasBattle ? opponent : 'tử khí'}, ${hasPill ? `dược lực ${pillName}, ` : ''}${hasDao ? `đốn ngộ ${daoAxiom}, ` : ''}hạt trường sinh đâm chồi phục hưng non sông.`,
+      wordCount: upscaledProse.trim().split(/\s+/).length,
+      seed: currentSeed
+    },
+    {
+      variantId: 'variant_healing',
+      label: 'Bản 2: Mầm Sống Chữa Lành',
+      toneStyle: 'Nhân văn sâu sắc, mưa cam lộ cứu giúp trăm họ',
+      chapterTitle: `Chương: Mưa Cam Lộ Tại ${location}`,
+      prose: variant2Prose,
+      summary: `Phân cảnh nhân văn cảm động: Hạt trường sinh tưới mát hạn hán thiên tai, cứu vớt sinh linh và tái lập thôn trang thanh bình.`,
+      wordCount: variant2Prose.trim().split(/\s+/).length,
+      seed: currentSeed + 137
+    },
+    {
+      variantId: 'variant_mythic',
+      label: 'Bản 3: Thần Thoại Thượng Cổ',
+      toneStyle: 'Khai thiên lập địa, quy tắc đại đạo & tiên cảnh bồng lai',
+      chapterTitle: `Chương: Thái Cổ Thần Mộc Đản Sinh`,
+      prose: variant3Prose,
+      summary: `Phân cảnh kỳ ảo vũ trụ: Hạt trường sinh nối liền linh mạch cấm địa, biến nơi tử vong thành thánh địa tu tiên bậc nhất.`,
+      wordCount: variant3Prose.trim().split(/\s+/).length,
+      seed: currentSeed + 888
+    }
+  ];
+
+  const activePathParts: string[] = [`[${mainChar}]`, `[${location}]`];
+  if (hasCalamity) activePathParts.push('[Chiến Tàn]');
+  if (hasBattle) activePathParts.push(`[Giao Đấu ${opponent}]`);
+  if (hasPill) activePathParts.push(`[Đan Dược ${pillName}]`);
+  if (hasDao) activePathParts.push(`[Ngộ Đạo]`);
+  if (hasSeed) activePathParts.push(`[${seedName}]`);
+  if (hasCamera) activePathParts.push('[Cinematic]');
+  activePathParts.push('[Master Engine]', '[Spatial Upscaler]', '[Chapter Output]');
+
+  return {
+    chapterTitle: `Chương: ${mainChar} Gieo Mầm Bất Tử Tại ${location}`,
+    rawProse,
+    upscaledProse,
+    summary: `Phân cảnh khởi tạo từ workflow đồ thị: ${mainChar} bước vào ${location}, đối mặt với ${hasCalamity ? calamityDesc : 'nghịch cảnh'}, kích hoạt ${hasSeed ? seedName : 'cơ duyên'}, thực hiện nâng cấp văn phong theo phong cách ${upscalerStyle}.`,
+    wordCount: upscaledProse.trim().split(/\s+/).length,
+    activePathSummary: activePathParts.join(' ➔ '),
+    seed: currentSeed,
+    variants,
+    connectedElements: {
+      characters: [mainChar],
+      locations: [location],
+      calamities: hasCalamity ? [calamityDesc] : [],
+      miracles: hasSeed ? [seedName] : [],
+      conflicts: hasBattle ? [conflict] : [],
+      pills: hasPill ? [pillName] : [],
+      daoAxioms: hasDao ? [daoAxiom] : [],
+      cinematics: hasCamera ? [cameraFraming] : [],
+      talismans: hasTalisman ? [formationName] : [],
+      beasts: hasBeast ? [beastName] : []
+    }
+  };
+};
+
 
 
 

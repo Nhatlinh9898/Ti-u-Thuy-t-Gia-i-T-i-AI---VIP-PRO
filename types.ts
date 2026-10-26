@@ -2230,3 +2230,132 @@ export interface NeuralSelfLearnFeedbackParams {
   existingAxioms: LearnedNarrativeAxiom[];
   epoch: number;
 }
+
+// =========================================================================
+// NODE-BASED VISUAL STORY WORKFLOW TYPES (COMFYUI / GRAPH PIPELINE)
+// =========================================================================
+
+export type StoryNodeType =
+  | 'character_loader'          // Node Nhân Vật & Đạo Hữu
+  | 'location_setting'          // Node Bối Cảnh, Động Phủ & Bí Cảnh
+  | 'calamity_ruins'            // Node Thiên Tai & Chiến Tàn Phế Tích
+  | 'longevity_seed'            // Node Hạt Trường Sinh Hồi Sinh & Nẩy Mầm
+  | 'battle_breakthrough'       // Node Đại Chiến & Đột Phá Lôi Kiếp
+  | 'alchemy_catalyst'          // Node Đan Dược & Thần Dược Xúc Tác
+  | 'dao_revelation'            // Node Đạo Ngộ & Dị Tượng Thiên Địa
+  | 'cinematic_director'        // Node Đạo Diễn Khung Hình Điện Ảnh
+  | 'talisman_formation'        // Node Trận Pháp & Phù Lục Hộ Thể / Phong Tỏa
+  | 'spirit_beast_summon'       // Node Linh Thú & Thần Thú Giáng Thế
+  | 'story_prompt'              // Node Ý Tưởng & Phục Bút
+  | 'master_synthesis'          // Node Máy Khởi Tạo Phân Cảnh (Master Engine)
+  | 'spatial_prose_upscaler'    // Node Nâng Cấp Văn Phong & Điển Tích
+  | 'chapter_output';           // Node Đầu Ra Bản Thảo & Chèn Truyện
+
+export type StoryPortDataType =
+  | 'character'
+  | 'location'
+  | 'calamity'
+  | 'miracle'
+  | 'conflict'
+  | 'catalyst'
+  | 'dao'
+  | 'camera'
+  | 'talisman'
+  | 'beast'
+  | 'prompt'
+  | 'raw_prose'
+  | 'upscaled_prose'
+  | 'any';
+
+export interface StoryPort {
+  id: string;
+  name: string;
+  type: StoryPortDataType;
+  direction: 'in' | 'out';
+  color: string;
+}
+
+export interface StoryNode {
+  id: string;
+  type: StoryNodeType;
+  title: string;
+  categoryLabel: string;
+  icon: string;
+  x: number;
+  y: number;
+  width?: number;
+  color: string;
+  headerBg: string;
+  inputs: StoryPort[];
+  outputs: StoryPort[];
+  data: Record<string, any>;
+  status?: 'idle' | 'running' | 'success' | 'error';
+  collapsed?: boolean;
+  muted?: boolean;
+  userNote?: string;
+}
+
+export interface StoryConnection {
+  id: string;
+  fromNodeId: string;
+  fromPortId: string;
+  toNodeId: string;
+  toPortId: string;
+  color?: string;
+}
+
+export interface StoryGroupFrame {
+  id: string;
+  title: string;
+  color: string;
+  bgColor: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface StoryWorkflowPreset {
+  id: string;
+  name: string;
+  subtitle: string;
+  description: string;
+  badge: string;
+  nodes: StoryNode[];
+  connections: StoryConnection[];
+  groups?: StoryGroupFrame[];
+}
+
+export interface StoryWorkflowVariant {
+  variantId: string;
+  label: string;
+  toneStyle: string;
+  chapterTitle: string;
+  prose: string;
+  summary: string;
+  wordCount: number;
+  seed: number;
+}
+
+export interface StoryWorkflowExecutionResult {
+  rawProse: string;
+  upscaledProse: string;
+  chapterTitle: string;
+  summary: string;
+  wordCount: number;
+  activePathSummary: string;
+  seed?: number;
+  variants?: StoryWorkflowVariant[];
+  connectedElements: {
+    characters: string[];
+    locations: string[];
+    calamities: string[];
+    miracles: string[];
+    conflicts: string[];
+    pills?: string[];
+    daoAxioms?: string[];
+    cinematics?: string[];
+    talismans?: string[];
+    beasts?: string[];
+  };
+}

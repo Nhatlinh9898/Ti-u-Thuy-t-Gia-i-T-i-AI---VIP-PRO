@@ -46,6 +46,7 @@ import { NeuralInferenceLearningStudio } from './components/NeuralInferenceLearn
 import { ArtOfWarStudio } from './components/ArtOfWarStudio';
 import { MartialTrainingStudio } from './components/MartialTrainingStudio';
 import { CharacterTrajectoryRoutingStudio } from './components/CharacterTrajectoryRoutingStudio';
+import { VisualStoryNodeWorkflowStudio } from './components/VisualStoryNodeWorkflowStudio';
 import { Spinner } from './components/Spinner';
 
 export default function App() {
@@ -73,10 +74,10 @@ export default function App() {
   );
   const [isOmniStudioOpen, setIsOmniStudioOpen] = useState<boolean>(true);
 
-  // Right Drawer Tab State
+  // Right Drawer Tab State (Default to Visual Story Node Workflow Studio)
   const [rightPanelTab, setRightPanelTab] = useState<
-    'neural' | 'omniWeaver' | 'martialTraining' | 'trajectoryRouting' | 'pipeline' | 'subplots' | 'omniverse' | 'masterSpine' | 'pantheon' | 'swords' | 'spells' | 'talismans' | 'cultivation' | 'alchemy' | 'weapons' | 'beasts' | 'treasures' | 'sects' | 'quests' | 'geopolitics' | 'artOfWar' | 'locations' | 'citadels' | 'manuals' | 'progression' | 'media' | 'characters' | 'chat' | 'voice'
-  >('neural');
+    'nodeWorkflow' | 'neural' | 'omniWeaver' | 'martialTraining' | 'trajectoryRouting' | 'pipeline' | 'subplots' | 'omniverse' | 'masterSpine' | 'pantheon' | 'swords' | 'spells' | 'talismans' | 'cultivation' | 'alchemy' | 'weapons' | 'beasts' | 'treasures' | 'sects' | 'quests' | 'geopolitics' | 'artOfWar' | 'locations' | 'citadels' | 'manuals' | 'progression' | 'media' | 'characters' | 'chat' | 'voice'
+  >('nodeWorkflow');
 
   const [isRightPanelExpanded, setIsRightPanelExpanded] = useState(true);
   const [isLoreSearchOpen, setIsLoreSearchOpen] = useState(false);
@@ -461,10 +462,20 @@ export default function App() {
           <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
             <button
               onClick={() => {
+                setRightPanelTab('nodeWorkflow');
+                setIsRightPanelExpanded(true);
+              }}
+              className="px-4 py-1.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-teal-500 hover:brightness-110 text-white font-black text-xs rounded-lg shadow-xl shadow-purple-950/90 ring-2 ring-teal-300 flex items-center gap-1.5 transition-all animate-pulse"
+              title="Workflow Đồ Phổ Node ComfyUI: Kết nối Cảnh Hoang Tàn, Hạt Trường Sinh Hồi Sinh, Nâng Cấp Văn Phong"
+            >
+              <span>🕸️</span> Workflow Đồ Phổ Node (ComfyUI)
+            </button>
+            <button
+              onClick={() => {
                 setRightPanelTab('omniWeaver');
                 setIsRightPanelExpanded(true);
               }}
-              className="px-4 py-1.5 bg-gradient-to-r from-amber-500 via-pink-600 to-purple-600 hover:brightness-110 text-white font-black text-xs rounded-lg shadow-xl shadow-purple-950/80 ring-2 ring-amber-300 flex items-center gap-1.5 transition-all animate-pulse"
+              className="px-4 py-1.5 bg-gradient-to-r from-amber-500 via-pink-600 to-purple-600 hover:brightness-110 text-white font-black text-xs rounded-lg shadow-xl shadow-purple-950/80 ring-2 ring-amber-300 flex items-center gap-1.5 transition-all"
             >
               <span>⚡</span> Vận Dụng Cốt Truyện & Dữ Liệu Mẫu
             </button>
@@ -1149,6 +1160,17 @@ export default function App() {
               {/* Tab Navigation Ribbon */}
               <div className="p-1.5 border-b border-white/10 bg-gray-900/40 grid grid-cols-4 sm:grid-cols-8 gap-1 text-[10px]">
                 <button
+                  onClick={() => setRightPanelTab('nodeWorkflow')}
+                  className={`py-1.5 rounded flex items-center justify-center gap-1 font-bold ${
+                    rightPanelTab === 'nodeWorkflow'
+                      ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-teal-500 text-white shadow ring-1 ring-teal-300 font-black'
+                      : 'bg-indigo-950/40 text-teal-300 hover:text-white border border-teal-500/30'
+                  }`}
+                  title="Workflow Đồ Phổ Node ComfyUI Sáng Tác Kết Nối Nhân Vật, Bối Cảnh, Thiên Tai & Hồi Sinh"
+                >
+                  <span>🕸️</span> Workflow
+                </button>
+                <button
                   onClick={() => setRightPanelTab('neural')}
                   className={`py-1.5 rounded flex items-center justify-center gap-1 font-bold ${
                     rightPanelTab === 'neural'
@@ -1450,6 +1472,52 @@ export default function App() {
 
               {/* Tab Render Area */}
               <div className="flex-1 overflow-hidden">
+                {rightPanelTab === 'nodeWorkflow' && (
+                  <VisualStoryNodeWorkflowStudio
+                    characters={characters}
+                    genre={config.genre}
+                    tone={config.tone}
+                    onInsertText={handleInsertTextToEditor}
+                    onCreateChapter={(title, content, summary) => {
+                      if (!treeData) {
+                        const newRoot: NovelNode = {
+                          id: 'node_' + Math.random().toString(36).substring(2, 9),
+                          type: NodeType.CHAPTER,
+                          title,
+                          content,
+                          summary,
+                          status: 'in_progress',
+                          children: [],
+                          isExpanded: true
+                        };
+                        setTreeData(newRoot);
+                        setSelectedNode(newRoot);
+                        return;
+                      }
+                      const newChapter: NovelNode = {
+                        id: 'node_' + Math.random().toString(36).substring(2, 9),
+                        type: NodeType.CHAPTER,
+                        title,
+                        content,
+                        summary,
+                        status: 'in_progress',
+                        children: [],
+                        isExpanded: true
+                      };
+                      const updatedTree = {
+                        ...treeData,
+                        children: [...treeData.children, newChapter]
+                      };
+                      setTreeData(updatedTree);
+                      setSelectedNode(newChapter);
+                    }}
+                    onSwitchToEditor={() => {
+                      setIsRightPanelExpanded(false);
+                    }}
+                    activeStoryBible={activeStoryBible}
+                    currentChapter={selectedNode}
+                  />
+                )}
                 {rightPanelTab === 'neural' && (
                   <NeuralInferenceLearningStudio
                     selectedNode={selectedNode}

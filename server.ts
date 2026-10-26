@@ -3887,6 +3887,134 @@ Trả về JSON:
 });
 
 // -------------------------------------------------------------------------
+// VISUAL STORY NODE WORKFLOW ENGINE (ComfyUI / Graph-based Pipeline)
+// -------------------------------------------------------------------------
+app.post('/api/gemini/execute-story-workflow', async (req, res) => {
+  try {
+    const { nodes, connections, genre, tone, customPrompt } = req.body;
+    const ai = getGenAI();
+
+    const charNodes = (nodes || []).filter((n: any) => n.type === 'character_loader' || n.type === 'character_input');
+    const locNodes = (nodes || []).filter((n: any) => n.type === 'location_setting' || n.type === 'location_input');
+    const calamityNodes = (nodes || []).filter((n: any) => n.type === 'calamity_ruins');
+    const seedNodes = (nodes || []).filter((n: any) => n.type === 'longevity_seed');
+    const battleNodes = (nodes || []).filter((n: any) => n.type === 'battle_breakthrough');
+    const pillNodes = (nodes || []).filter((n: any) => n.type === 'alchemy_catalyst');
+    const daoNodes = (nodes || []).filter((n: any) => n.type === 'dao_revelation');
+    const cameraNodes = (nodes || []).filter((n: any) => n.type === 'cinematic_director');
+    const talismanNodes = (nodes || []).filter((n: any) => n.type === 'talisman_formation');
+    const beastNodes = (nodes || []).filter((n: any) => n.type === 'spirit_beast_summon');
+    const promptNodes = (nodes || []).filter((n: any) => n.type === 'story_prompt');
+    const upscalerNodes = (nodes || []).filter((n: any) => n.type === 'spatial_prose_upscaler');
+
+    const prompt = `Bạn là một AI Master Story Engine điều phối quy trình sáng tác tiểu thuyết theo đồ thị node ComfyUI/Blueprint chuyên nghiệp.
+Dưới đây là các nút dữ liệu đã được tác giả kết nối và kích hoạt trên đồ phổ:
+
+1. Thể loại & Văn phong: Thể loại: ${genre || 'Tiên Hiệp Cổ Phong'}, Giọng văn: ${tone || 'Hùng tráng bi tráng, nhiệt huyết'}
+2. Nhân vật tham chiến:
+${JSON.stringify(charNodes.map((n: any) => n.data), null, 2)}
+
+3. Bối cảnh không gian & Thời tiết:
+${JSON.stringify(locNodes.map((n: any) => n.data), null, 2)}
+
+4. Hoang tàn sau chiến tranh / Thiên tai tàn phá (Calamity & Ruins):
+${JSON.stringify(calamityNodes.map((n: any) => n.data), null, 2)}
+
+5. Hạt Trường Sinh Rơi Xuống & Sự Hồi Sinh Vạn Vật (Longevity Seed Rebirth):
+${JSON.stringify(seedNodes.map((n: any) => n.data), null, 2)}
+
+6. Giao tranh & Đột phá cảnh giới (Combat & Breakthrough):
+${JSON.stringify(battleNodes.map((n: any) => n.data), null, 2)}
+
+7. Đan Dược & Thần Dược Xúc Tác Hạt Mầm (Alchemy Catalyst):
+${JSON.stringify(pillNodes.map((n: any) => n.data), null, 2)}
+
+8. Đạo Ngộ Quy Tắc & Dị Tượng Thiên Địa (Dao Revelation):
+${JSON.stringify(daoNodes.map((n: any) => n.data), null, 2)}
+
+9. Chỉ Đạo Góc Máy & Khung Hình Điện Ảnh (Cinematic Director Framing):
+${JSON.stringify(cameraNodes.map((n: any) => n.data), null, 2)}
+
+10. Trận Pháp & Phù Lục Cấm Đoán (Talisman & Formation Arrays):
+${JSON.stringify(talismanNodes.map((n: any) => n.data), null, 2)}
+
+11. Linh Thú & Thần Thú Giáng Thế (Spirit Beast Summon):
+${JSON.stringify(beastNodes.map((n: any) => n.data), null, 2)}
+
+12. Định hướng sáng tác & Lời nhắc:
+${JSON.stringify(promptNodes.map((n: any) => n.data), null, 2)}
+Lời nhắc bổ sung: ${customPrompt || ''}
+
+13. Bộ lọc nâng cấp văn phong (Spatial Prose Upscaler):
+${JSON.stringify(upscalerNodes.map((n: any) => n.data), null, 2)}
+
+Hãy tổng hợp toàn bộ các dòng chảy dữ liệu trên và xuất ra định dạng JSON:
+{
+  "chapterTitle": "Tên chương hấp dẫn, mang hơi thở tiên hiệp cổ phong",
+  "rawProse": "Bản thảo thô kết hợp các yếu tố nhân vật, bối cảnh, thảm họa, hạt mầm trường sinh...",
+  "upscaledProse": "Bản văn phong đỉnh cao đã được nâng cấp qua Spatial Prose Upscaler (giàu hình tượng, đối ngữ chuẩn mực, miêu tả cảnh đổ nát chiến tranh cực kỳ chi tiết, khoảnh khắc hạt mầm trường sinh rơi xuống và vạn vật đâm chồi nở hoa bừng sáng sinh cơ, đối thoại sắc sảo, cảnh chiến đấu mãn nhãn)",
+  "summary": "Tóm tắt chương trong 2-3 câu",
+  "wordCount": 1500,
+  "activePathSummary": "Chuỗi liên kết đồ thị nút đang kích hoạt",
+  "variants": [
+    {
+      "variantId": "variant_epic",
+      "label": "Bản 1: Bi Tráng Sử Thi",
+      "toneStyle": "Hùng tráng bi tráng, hoành tráng chiến trận & thần tích",
+      "chapterTitle": "Tên chương phong cách sử thi",
+      "prose": "Đoạn văn phong sử thi hoành tráng...",
+      "summary": "Tóm tắt bản 1",
+      "wordCount": 1500,
+      "seed": 100001
+    },
+    {
+      "variantId": "variant_healing",
+      "label": "Bản 2: Mầm Sống Chữa Lành",
+      "toneStyle": "Nhân văn sâu sắc, mưa cam lộ cứu giúp trăm họ",
+      "chapterTitle": "Tên chương phong cách chữa lành",
+      "prose": "Đoạn văn phong cảm động nhân văn...",
+      "summary": "Tóm tắt bản 2",
+      "wordCount": 1400,
+      "seed": 100138
+    },
+    {
+      "variantId": "variant_mythic",
+      "label": "Bản 3: Thần Thoại Thượng Cổ",
+      "toneStyle": "Khai thiên lập địa, quy tắc đại đạo & tiên cảnh bồng lai",
+      "chapterTitle": "Tên chương phong cách thần thoại thượng cổ",
+      "prose": "Đoạn văn phong tiên hiệp kỳ ảo đại đạo...",
+      "summary": "Tóm tắt bản 3",
+      "wordCount": 1600,
+      "seed": 100889
+    }
+  ],
+  "connectedElements": {
+    "characters": ["Tên nhân vật"],
+    "locations": ["Tên địa danh"],
+    "calamities": ["Thiên tai / tàn tích"],
+    "miracles": ["Phép màu hạt trường sinh"],
+    "conflicts": ["Xung đột / đột phá"]
+  }
+}`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json'
+      }
+    });
+
+    const cleaned = (response.text || '{}').replace(/```json/g, '').replace(/```/g, '').trim();
+    const result = JSON.parse(cleaned);
+    return res.json({ success: true, data: result });
+  } catch (error: any) {
+    console.error('Error executing story workflow:', error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// -------------------------------------------------------------------------
 // SERVER & VITE INTEGRATION
 // -------------------------------------------------------------------------
 const PORT = parseInt(process.env.PORT || '3000', 10);
